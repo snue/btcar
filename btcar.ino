@@ -6,8 +6,8 @@
 // 1x Bluetooth module for remote control (via bt<->serial adapter)
 
 // JY-MCU - Bluetooth/Serial cross-wired
-//   TXD <- Pin D10 (RX)
-//   RXD <- Pin D11 (TX)
+//   TXD <- Pin 1 (RX)
+//   RXD <- Pin 0 (TX)
 
 // L298N - DC Motor driver:
 //   IN1 <- Pin D2
@@ -23,10 +23,8 @@
 //   CH5 -> left wheel duty cycle
 
 #include <Wire.h>
-#include <SoftwareSerial.h>
 #include <Adafruit_PWMServoDriver.h>
 
-SoftwareSerial btSerial(10, 11); // RX, TX
 Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x40);
 
 enum Pins {
@@ -102,51 +100,9 @@ void reverse()
   }
 }
 
-/*
-void waitForResponse() {
-    delay(1000);
-    while (btSerial.available()) {
-      Serial.write(btSerial.read());
-    }
-    Serial.write("\n");
-}
-
-void configureBtSerial() {
-  Serial.println("Starting config");
-  btSerial.begin(BT_BAUD);
-  delay(1000);
-
-  // Should respond with OK
-  btSerial.print("AT");
-  waitForResponse();
-
-  // Should respond with its version
-  btSerial.print("AT+VERSION");
-  waitForResponse();
-
-  // Set pin to 0000
-  btSerial.print("AT+PIN0000");
-  waitForResponse();
-
-  // Set the name
-  btSerial.print("AT+NAME");
-  btSerial.print("SerialRobot");
-  waitForResponse();
-
-  // Set baudrate to 57600
-  btSerial.print("AT+BAUD7");
-  waitForResponse();
-
-  Serial.println("Done!");
-}
-*/
-
 void setup()
 {
-  //Serial.begin(115200);
-
-  btSerial.begin(BT_BAUD);
-  // configureBtSerial();
+  Serial.begin(BT_BAUD);
 
   forward = false;
 
@@ -157,6 +113,7 @@ void setup()
 
   pwm.begin();
   pwm.setPWMFreq(PWM_HZ);
+
   full_stop();
 }
 
@@ -164,51 +121,51 @@ void loop()
 {
   // Read input
   int cmd = 0;
-  if (btSerial.available()) {
-    cmd = btSerial.read();
+  if (Serial.available()) {
+    cmd = Serial.read();
   }
 
   // Adapt movement
   switch (cmd) {
   case 'j':
     direction = max(0, direction - 0xff);
-    btSerial.print("Go Left: ");
-    btSerial.println(direction);
+    Serial.print("Go Left: ");
+    Serial.println(direction);
     set_direction();
     break;
   case 'k':
     speed = min(0x0fff, speed + 0xff);
-    btSerial.print("Go Faster: ");
-    btSerial.println(speed);
+    Serial.print("Go Faster: ");
+    Serial.println(speed);
     set_speed();
     break;
   case 'l':
     speed = max(0, speed - 0xff);
-    btSerial.print("Go Slower: ");
-    btSerial.println(speed);
+    Serial.print("Go Slower: ");
+    Serial.println(speed);
     set_speed();
     break;
   case ';':
     direction = min(0x0fff, direction + 0xff);
-    btSerial.print("Go Right: ");
-    btSerial.println(direction);
+    Serial.print("Go Right: ");
+    Serial.println(direction);
     set_direction();
     break;
   case 'n':
     direction = NEUTRAL;
-    btSerial.print("Go Straight: ");
-    btSerial.println(direction);
+    Serial.print("Go Straight: ");
+    Serial.println(direction);
     set_direction();
     break;
   case 's':
     speed = 0;
-    btSerial.println("Full STOP!");
+    Serial.println("Full STOP!");
     full_stop();
     break;
   case ' ':
     reverse();
-    btSerial.print("Reverse! Going ");
-    btSerial.println(forward ? "FORWARD" : "BACKWARDS");
+    Serial.print("Reverse! Going ");
+    Serial.println(forward ? "FORWARD" : "BACKWARDS");
   default:
     break;
   }
