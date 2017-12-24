@@ -1,21 +1,22 @@
 // Arduino based RC car with bluetooth connection
 //
 // Base: Sunfounder Smart Video Car Kit for RasPi (w/o Smart Video and RasPi)
+// 1x Arduino Nano MCU
 // 1x Servo for steering
 // 2x DC Motor for speed
-// 1x Bluetooth module for remote control (via bt<->serial adapter)
+// 1x Bluetooth<->Serial module for remote control
 
-// JY-MCU - Bluetooth/Serial cross-wired
+// JY-MCU - Bluetooth/Serial module (cross-wired):
 //   TXD <- Pin 1 (RX)
 //   RXD <- Pin 0 (TX)
 
-// L298N - DC Motor driver:
-//   IN1 <- Pin D2
-//   IN2 <- Pin D3
-//   IN3 <- Pin D4
-//   IN4 <- Pin D5
+// L298N - H-Bridge DC Motor driver:
+//   IN1 <- Pin D2 (Motor 1 Fwd)
+//   IN2 <- Pin D3 (Motor 1 Reverse)
+//   IN3 <- Pin D4 (Motor 2 Fwd)
+//   IN4 <- Pin D5 (Motor 2 Reverse)
 
-// PCA9685 - Servo controller PWM driver:
+// PCA9685 - 16 channel PWM Servo driver:
 //   SDA <- Pin A4
 //   SCL <- Pin A5
 //   CH0 -> steering servo
@@ -36,13 +37,14 @@ enum Pins {
 
 enum Constants {
   NEUTRAL      = 2300, // Direction: Straight (requires calibration)
-  PWM_HZ       = 400, // PWM duty cycle frequency (40 Hz - 1kHz)
+  PWM_HZ       = 400,  // PWM duty cycle frequency (40 Hz - 1kHz)
   CH_DIRECTION = 0,    // Steering PWM channel
   CH_M1_SPEED  = 4,    // Motor 1 PWM channel
   CH_M2_SPEED  = 5,    // Motor 2 PWM channel
   BT_BAUD      = 57600 // Baud Rate of Bluetooth Serial
 };
 
+// Just keep current movement settings in global variables
 bool forward;
 int16_t speed;
 int16_t direction;
@@ -58,10 +60,11 @@ void set_speed()
 
 // 12 bit PWM for direction
 // left = 0
-// straight = NEUTRAL (requires calibration)
+// straight = NEUTRAL
 // right = 4095
 void set_direction()
 {
+  // TODO: use map() function to calibrate
   pwm.setPWM(CH_DIRECTION, 0, direction);
 }
 
@@ -87,6 +90,7 @@ void reverse()
 {
   forward ^= 0x1;
 
+  // CAUTION: Always pull one output to LOW first! Never set both directions HIGH!
   if (forward) {
     digitalWrite(M1_REV, LOW);
     digitalWrite(M2_REV, LOW);
@@ -164,7 +168,7 @@ void loop()
     break;
   case ' ':
     reverse();
-    Serial.print("Reverse! Going ");
+    Serial.print("Engage! Going ");
     Serial.println(forward ? "FORWARD" : "BACKWARDS");
   default:
     break;
